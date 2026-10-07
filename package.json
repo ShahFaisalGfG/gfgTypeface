@@ -3,6 +3,12 @@
   "description": "Per-site fonts, text size and language fonts for Chromium browsers.",
   "private": true,
   "version": "4.0.0",
+  "license": "MIT",
+  "author": "Shah Faisal",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ShahFaisalGfG/gfgTypeface.git"
+  },
   "type": "module",
   "engines": {
     "node": ">=22"

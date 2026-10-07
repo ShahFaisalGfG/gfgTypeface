@@ -1,5 +1,7 @@
 # gfg Typeface
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 gfg Typeface changes how text looks on the web: pick a font, a text size, line spacing and weight for each site or for all sites, and give languages such as Urdu, Arabic, Hindi or Chinese their own font. Text sizes stay relative to each site's own sizes, so page layouts keep working.
 
 ![gfg Typeface popup](store/assets/screenshot-1-popup.png)
@@ -21,11 +23,11 @@ gfg Typeface changes how text looks on the web: pick a font, a text size, line s
 
 Install from the Chrome Web Store (link added on publication), or load a build:
 
-1. Download `gfg-typeface-<version>-chrome.zip` from the releases page and unzip it, or build it yourself (see [Development](#development)).
-2. Open `chrome://extensions` (or `edge://extensions`) and turn on **Developer mode**.
-3. Click **Load unpacked** and select the unzipped folder.
+1. Download `gfg-typeface-<version>-chrome.zip` from the releases page and unzip it, or build it yourself with `npm install` and `npm run build` (see [Development](#development)).
+2. Open the extensions page (`chrome://extensions`, `edge://extensions` or `opera://extensions`) and turn on **Developer mode**.
+3. Click **Load unpacked** and select the folder that contains `manifest.json`: the unzipped folder, or `.output/chrome-mv3` inside this repository after a build. The repository folder itself has no `manifest.json` and can't be loaded.
 
-gfg Typeface runs in Chrome, Edge, Brave, Opera, Vivaldi and other Chromium browsers, version 133 or newer. Firefox is not supported: it has no API for listing installed fonts.
+gfg Typeface runs in Chrome, Edge, Brave, Opera, Vivaldi and other Chromium browsers based on Chromium 133 or newer. Firefox is not supported: it has no API for listing installed fonts.
 
 ## Usage
 
@@ -82,6 +84,10 @@ Settings, including the host names of sites you configure, are stored in your br
 - Fonts and line heights that a site changes only on hover keep their resting values.
 - A site's inline `!important` font rules, and `!important` rules in cascade layers that the site declares before the extension's own, win over your settings.
 - Browser sync storage holds settings for about 500 sites.
+
+## License
+
+gfg Typeface is free and open-source software, released under the [MIT License](LICENSE): free to use, modify and distribute. Third-party code bundled in the extension is listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ## Upgrading from gfg Font Changer 3.x
 

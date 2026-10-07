@@ -1,7 +1,16 @@
+import { resolve } from 'node:path';
 import { defineConfig } from 'wxt';
+
+/** License texts that must ship with the extension, which bundles MIT-licensed WXT code. */
+const LICENSE_FILES = ['LICENSE', 'THIRD_PARTY_NOTICES.md'];
 
 export default defineConfig({
   srcDir: 'src',
+  hooks: {
+    'build:publicAssets': (_wxt, files) => {
+      for (const name of LICENSE_FILES) files.push({ absoluteSrc: resolve(name), relativeDest: name });
+    },
+  },
   manifestVersion: 3,
   targetBrowsers: ['chrome'],
   manifest: {
