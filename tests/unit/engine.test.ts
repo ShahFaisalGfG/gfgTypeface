@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { bolder, classifyFamily, firstFamily, isPrivateUseText, readSentinel, sentinelName } from '../../src/engine/classify';
-import { buildFontFaces, buildSheet, familyAttrValue, familyRule, familyScale } from '../../src/engine/css';
+import { buildFontFaces, buildSheet, familyAttrValue, familyRule, familyScale, languageFamilyList } from '../../src/engine/css';
 import { createPlan } from '../../src/engine/plan';
 import { DEFAULT_PROFILE, type Profile } from '../../src/lib/settings';
 
@@ -65,6 +65,17 @@ describe('createPlan', () => {
     expect(createPlan(profile({ languages: { ur: { ...urdu, size: 100 }, ar: { ...urdu, size: 100 } } })).detectLang).toBe(true);
   });
 
+  it('plans per-language spacing and weight', () => {
+    const plan = createPlan(profile({ lineSpacing: 120, weight: 100, languages: { ur: { ...urdu, size: 100, lineSpacing: 150 }, ar: { ...urdu, size: 100, weight: 300 } } }));
+    expect(plan.languages.map(({ id, spacing, weightDelta }) => [id, spacing, weightDelta])).toEqual([
+      ['ur', 1.5, 100],
+      ['ar', 1.2, 300],
+    ]);
+    const spacingOnly = createPlan(profile({ languages: { ur: { ...urdu, size: 100, lineSpacing: 140 } } }));
+    expect(spacingOnly).toMatchObject({ anySpacing: true, trackLh: true, detectLang: true, trackWeight: false });
+    expect(createPlan(profile({ languages: { ur: { ...urdu, size: 100, weight: 200 } } })).trackWeight).toBe(true);
+  });
+
   it('changes its key only when the tracked boundaries change', () => {
     expect(createPlan(profile({ size: 110 })).key).toBe(createPlan(profile({ size: 150 })).key);
     expect(createPlan(profile({ size: 100 })).key).not.toBe(createPlan(profile({ size: 110 })).key);
@@ -112,6 +123,22 @@ describe('css', () => {
     expect(sizeOnly).not.toContain('data-gfc-lnorm');
     const spacing = buildSheet(createPlan(profile({ lineSpacing: 150 })), [], {});
     expect(spacing).toContain('[data-gfc-lnorm]');
+  });
+
+  it('sets language spacing, weight and normal line height on language boundaries', () => {
+    const plan = createPlan(profile({ lineSpacing: 120, weight: 100, languages: { ur: { ...urdu, lineSpacing: 160, weight: 300 } } }));
+    const sheet = buildSheet(plan, [], { languageNormal: { ur: 2.4 } });
+    expect(sheet).toContain('--gfc-ls: 1.6; --gfc-wl: 200; --gfc-nrl: 2.4;');
+    expect(sheet).toMatch(/\[data-gfc-g\] \{[^}]*--gfc-ls: 1\.2; --gfc-wl: 0; --gfc-nrl: initial;/);
+    expect(sheet).toContain('var(--gfc-nrl, var(--gfc-nr, 1.2))');
+    expect(sheet).toContain('+ var(--gfc-wd, 0) + var(--gfc-wl, 0)');
+    expect(familyRule(plan, { id: 1, list: '"Font Awesome 6 Free"', kind: 'icon' }, {})).toContain('--gfc-wl: 0');
+  });
+
+  it('measures language fonts with their faces before the main font', () => {
+    const plan = createPlan(profile({ font: 'Segoe UI', languages: { ur: urdu, ar: { ...urdu, faces: [] } } }));
+    expect(languageFamilyList(plan, plan.languages[0]!)).toBe('"gfc-l-ur", "Segoe UI", sans-serif');
+    expect(languageFamilyList(plan, plan.languages[1]!)).toBe('"Segoe UI", "Jameel Noori Nastaleeq", sans-serif');
   });
 
   it('builds unicode-range faces per language', () => {

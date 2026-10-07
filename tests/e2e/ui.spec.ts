@@ -45,6 +45,29 @@ test('popup previews live and saves per site', async ({ context, worker, extensi
   await expect.poll(() => worker.evaluate((key) => chrome.storage.sync.get(key), `site:${SITE}`)).toEqual({});
 });
 
+test('language cards have advanced line spacing and weight', async ({ context, worker, extensionId, setSettings }) => {
+  const urdu = { family: 'Courier New', faces: [{ local: ['Courier New'], weight: '400', style: 'normal' }], size: 120 };
+  await setSettings({ global: profile({ languages: { ur: urdu } }) });
+  const page = await context.newPage();
+  await page.goto('/lang.html');
+  const tabId = await tabIdFor(worker, '/lang.html');
+  const popup = await context.newPage();
+  await popup.goto(`chrome-extension://${extensionId}/popup.html?tabId=${tabId}`);
+  await popup.getByText('More options').click();
+  await popup.getByText('Advanced').click();
+
+  const card = popup.locator('.language-row', { hasText: 'Urdu' });
+  await expect(card.locator('.badge', { hasText: 'Default' })).toHaveCount(2);
+  await card.getByRole('button', { name: 'Increase urdu line spacing' }).click();
+  await expect(card.locator('.badge', { hasText: 'Urdu' })).toBeVisible();
+  await expect(card.locator('summary')).toContainText('Line spacing 105%');
+  const stored = () => worker.evaluate((key) => chrome.storage.sync.get(key), `site:${SITE}`);
+  await expect.poll(stored).toEqual({ [`site:${SITE}`]: { languages: { ur: { ...urdu, lineSpacing: 105 } } } });
+
+  await card.getByRole('button', { name: 'Use the Line spacing setting above' }).click();
+  await expect.poll(stored).toEqual({ [`site:${SITE}`]: { languages: { ur: urdu } } });
+});
+
 test('popup explains pages the extension cannot change', async ({ context, worker, extensionId }) => {
   const page = await context.newPage();
   await page.goto('chrome://version');

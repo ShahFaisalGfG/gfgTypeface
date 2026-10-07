@@ -560,6 +560,26 @@ details.more[open] > summary .chevron {
   margin-top: var(--space-2);
 }
 
+details.language-advanced {
+  border-top: 1px solid var(--border);
+}
+
+details.language-advanced > summary {
+  padding: 6px 0 2px;
+  font-size: 12px;
+}
+
+details.language-advanced > summary .field-hint {
+  overflow: hidden;
+  font-weight: 400;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+details.language-advanced .field {
+  padding: 6px 0;
+}
+
 .language-sample {
   font-size: 18px;
   line-height: 1.6;

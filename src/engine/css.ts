@@ -35,10 +35,13 @@ export interface FamilyInfo {
   sizeFix?: number;
 }
 
-/** Aspects of the replacement fonts, used to match x-heights. */
+/** Measured metrics of the replacement fonts. */
 export interface FontMetrics {
+  /** `ex-height` aspects of the main and code fonts, used to match x-heights. */
   mainAspect?: number;
   codeAspect?: number;
+  /** `line-height: normal` ratio of each language's font, by language id. */
+  languageNormal?: Record<string, number>;
 }
 
 const LANG_FACE_PREFIX = 'gfc-l-';
@@ -91,13 +94,26 @@ export function familyRule(plan: Plan, family: FamilyInfo, metrics: FontMetrics)
   if (plan.trackWeight) {
     const keepsWeight = family.kind === 'icon' || family.kind === 'emoji';
     declarations.push(`--gfc-wd: ${keepsWeight ? 0 : plan.weightDelta}`);
+    // Icons inside a paragraph with a language weight keep their weight too.
+    if (keepsWeight) declarations.push('--gfc-wl: 0');
   }
-  if (plan.spacing !== 1 && family.normalRatio) declarations.push(`--gfc-nr: ${num(family.normalRatio)}`);
+  if (plan.anySpacing && family.normalRatio) declarations.push(`--gfc-nr: ${num(family.normalRatio)}`);
   return `[${ATTR.family}="${familyAttrValue(plan, family)}"] { ${declarations.join('; ')}; }`;
 }
 
 function faceFamily(language: PlannedLanguage): string {
   return `"${LANG_FACE_PREFIX}${language.id}"`;
+}
+
+/**
+ * The font list a language's paragraphs render with: its range-limited face before the main
+ * font, or its family after the main font when no face could be resolved.
+ */
+export function languageFamilyList(plan: Plan, language: PlannedLanguage): string {
+  const main = plan.profile.font ? `${cssFamily(plan.profile.font)}, ` : '';
+  return language.font.faces.length
+    ? `${faceFamily(language)}, ${main}sans-serif`
+    : `${main}${cssFamily(language.font.family)}, sans-serif`;
 }
 
 function fontFaceRules(plan: Plan): string[] {
@@ -138,15 +154,23 @@ export function buildSheet(plan: Plan, families: Iterable<FamilyInfo>, metrics: 
   const rules: string[] = [];
 
   rules.push(
-    `:root { --gfc-zf: ${num(plan.z)}; --gfc-wd: ${plan.weightDelta}; --gfc-lf: ${rootLists.faces}; --gfc-lt: ${rootLists.tail}; }`,
+    `:root { --gfc-zf: ${num(plan.z)}; --gfc-wd: ${plan.weightDelta}; --gfc-wl: 0; --gfc-ls: ${num(plan.spacing)}; ` +
+      `--gfc-lf: ${rootLists.faces}; --gfc-lt: ${rootLists.tail}; }`,
   );
 
   if (plan.trackLang) {
-    rules.push(`[${ATTR.lang}] { --gfc-lf: ${rootLists.faces}; --gfc-lt: ${rootLists.tail}; --gfc-zl: 1; }`);
+    // Any language boundary first returns to the profile's values, e.g. English inside Urdu.
+    rules.push(
+      `[${ATTR.lang}] { --gfc-lf: ${rootLists.faces}; --gfc-lt: ${rootLists.tail}; --gfc-zl: 1; ` +
+        `--gfc-ls: ${num(plan.spacing)}; --gfc-wl: 0; --gfc-nrl: initial; }`,
+    );
     for (const language of plan.languages) {
       const lists = languageLists(language, defaults);
+      const normal = metrics.languageNormal?.[language.id];
       rules.push(
-        `[${ATTR.lang}="${language.id}"] { --gfc-lf: ${lists.faces}; --gfc-lt: ${lists.tail}; --gfc-zl: ${num(language.font.size / 100)}; }`,
+        `[${ATTR.lang}="${language.id}"] { --gfc-lf: ${lists.faces}; --gfc-lt: ${lists.tail}; ` +
+          `--gfc-zl: ${num(language.font.size / 100)}; --gfc-ls: ${num(language.spacing)}; ` +
+          `--gfc-wl: ${language.weightDelta - plan.weightDelta}${normal ? `; --gfc-nrl: ${num(normal)}` : ''}; }`,
       );
     }
   }
@@ -165,17 +189,18 @@ export function buildSheet(plan: Plan, families: Iterable<FamilyInfo>, metrics: 
   }
 
   if (plan.trackLh) {
-    const factor = `${scale} * ${num(plan.spacing)}`;
+    const factor = `${scale} * var(--gfc-ls, 1)`;
     rules.push(`[${ATTR.lhNumber}] { line-height: calc(attr(${ATTR.lhNumber} type(<number>), 1.2) * ${factor}) !important; }`);
     rules.push(`[${ATTR.lhLength}] { line-height: calc(attr(${ATTR.lhLength} type(<length>), 0px) * ${factor}) !important; }`);
-    if (plan.spacing !== 1) {
-      rules.push(`[${ATTR.lhNormal}] { line-height: calc(var(--gfc-nr, 1.2) * ${factor}) !important; }`);
+    if (plan.anySpacing) {
+      // A language's own font (e.g. tall Nastaliq) sets the normal line height in its paragraphs.
+      rules.push(`[${ATTR.lhNormal}] { line-height: calc(var(--gfc-nrl, var(--gfc-nr, 1.2)) * ${factor}) !important; }`);
     }
   }
 
   if (plan.trackWeight) {
     rules.push(
-      `[${ATTR.weight}] { font-weight: clamp(1, attr(${ATTR.weight} type(<number>), 400) + var(--gfc-wd, 0), 1000) !important; }`,
+      `[${ATTR.weight}] { font-weight: clamp(1, attr(${ATTR.weight} type(<number>), 400) + var(--gfc-wd, 0) + var(--gfc-wl, 0), 1000) !important; }`,
     );
   }
 

@@ -20,6 +20,10 @@ export interface LanguageFont {
   faces: LocalFace[];
   /** Text size for paragraphs in this language, in percent. */
   size: number;
+  /** Line spacing for paragraphs in this language, in percent; absent follows the profile. */
+  lineSpacing?: number;
+  /** Weight change for paragraphs in this language; absent follows the profile. */
+  weight?: number;
 }
 
 export interface Profile {
@@ -115,7 +119,18 @@ function normalizeLanguageFont(value: unknown): LanguageFont | null {
   const faces = Array.isArray(value.faces)
     ? value.faces.map(normalizeFace).filter((face): face is LocalFace => !!face).slice(0, 8)
     : [];
-  return { family, faces, size: clampStep(value.size, LIMITS.languageSize, 100) };
+  const font: LanguageFont = { family, faces, size: clampStep(value.size, LIMITS.languageSize, 100) };
+  const lineSpacing = optionalStep(value.lineSpacing, LIMITS.lineSpacing);
+  const weight = optionalStep(value.weight, LIMITS.weight);
+  if (lineSpacing !== undefined) font.lineSpacing = lineSpacing;
+  if (weight !== undefined) font.weight = weight;
+  return font;
+}
+
+/** Like `clampStep`, but keeps a missing or invalid value missing. */
+function optionalStep(value: unknown, limit: { min: number; max: number; step: number }): number | undefined {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return undefined;
+  return clampStep(value, limit, 0);
 }
 
 function normalizeLanguages(value: unknown, allowNull: boolean): Record<string, LanguageFont | null> {

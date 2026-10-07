@@ -272,8 +272,9 @@ export class Detector {
       if (open.has('weight')) {
         const parentWeight = parentSnapshot?.weight;
         const parentOriginalWeight = parentOriginal?.weight;
-        const keepsWeight = familyInfo?.kind === 'icon' || familyInfo?.kind === 'emoji';
-        if (parentWeight !== undefined && self.weight === parentWeight && parentOriginalWeight !== undefined && !keepsWeight) {
+        // Icons keep their own weight; a language paragraph gets its language's weight change.
+        const ownWeight = familyInfo?.kind === 'icon' || familyInfo?.kind === 'emoji' || ATTR.lang in tags;
+        if (parentWeight !== undefined && self.weight === parentWeight && parentOriginalWeight !== undefined && !ownWeight) {
           original.weight = parentOriginalWeight;
           stillInherited.add('weight');
         } else {
@@ -307,7 +308,7 @@ export class Detector {
         if (element.getAttribute(name) === value) continue;
         element.setAttribute(name, value);
         // `line-height: normal` has no rule at 100% spacing, so it changes nothing below.
-        if (name === ATTR.lhNormal && plan.spacing === 1) continue;
+        if (name === ATTR.lhNormal && !plan.anySpacing) continue;
         for (const prop of OVERRIDES[name] ?? []) props.add(prop);
       }
       if (props.size) overridden.set(element, props);

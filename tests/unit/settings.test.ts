@@ -30,6 +30,13 @@ describe('normalizeGlobal', () => {
     expect(settings.languages).toEqual({ ur: urdu });
   });
 
+  it('keeps optional per-language spacing and weight, clamped', () => {
+    const settings = normalizeGlobal({ languages: { ur: { ...urdu, lineSpacing: 999, weight: 130 }, ar: { ...urdu, lineSpacing: '150', weight: null } } });
+    expect(settings.languages.ur).toMatchObject({ lineSpacing: 200, weight: 100 });
+    expect(settings.languages.ar).not.toHaveProperty('lineSpacing');
+    expect(settings.languages.ar).not.toHaveProperty('weight');
+  });
+
   it('rejects malformed faces', () => {
     const settings = normalizeGlobal({ languages: { ur: { ...urdu, faces: [{ local: [] }, { local: ['A'], weight: 'bold', style: 'x' }] } } });
     expect(settings.languages.ur!.faces).toEqual([{ local: ['A'], weight: '400', style: 'normal' }]);

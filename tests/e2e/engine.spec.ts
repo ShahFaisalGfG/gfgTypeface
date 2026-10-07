@@ -139,6 +139,34 @@ test('language fonts apply per glyph and language sizes per paragraph', async ({
   expect(sized[5]).toBeCloseTo(withFont[5]!, 0);
 });
 
+test('languages get their own line spacing and weight per paragraph', async ({ context, setSettings }) => {
+  const page = await context.newPage();
+  await page.goto('/lang.html');
+  const urdu = { family: 'Courier New', faces: [{ local: ['Courier New'], weight: '400', style: 'normal' }], size: 100 };
+  const heights = () => Promise.all(['#ur', '#unmarked', '#english'].map((selector) => page.locator(selector).evaluate((element) => element.getBoundingClientRect().height)));
+
+  await setSettings({ global: profile({ languages: { ur: urdu } }) });
+  await settle(page);
+  const base = await heights();
+
+  await setSettings({ global: profile({ languages: { ur: { ...urdu, lineSpacing: 150, weight: 300 } } }) });
+  await settle(page);
+  const spaced = await heights();
+  // Marked and detected Urdu paragraphs get taller lines and bolder text; English doesn't change.
+  expect(spaced[0]! / base[0]!).toBeCloseTo(1.5, 1);
+  expect(spaced[1]! / base[1]!).toBeCloseTo(1.5, 1);
+  expect(spaced[2]).toBeCloseTo(base[2]!, 0);
+  expect(await style(page, '#ur', 'font-weight')).toBe('700');
+  expect(await style(page, '#english', 'font-weight')).toBe('400');
+
+  // With only the profile's spacing, Urdu lines use the Urdu font's own normal height.
+  await setSettings({ global: profile({ lineSpacing: 150, languages: { ur: urdu } }) });
+  await settle(page);
+  const profileSpaced = await heights();
+  expect(profileSpaced[0]! / base[0]!).toBeCloseTo(1.5, 1);
+  expect(profileSpaced[2]! / base[2]!).toBeCloseTo(1.5, 1);
+});
+
 test('replacement fonts match the x-height of the font they replace', async ({ context, setSettings }) => {
   await setSettings({ global: profile({ font: 'Verdana', matchSize: true }) });
   const page = await context.newPage();

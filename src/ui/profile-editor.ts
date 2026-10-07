@@ -40,7 +40,7 @@ export interface EditorOptions {
   compact: boolean;
 }
 
-const MORE_OPEN_KEY = 'gfg-typeface.more-open';
+const OPEN_KEY_PREFIX = 'gfg-typeface.open.';
 
 function percent(value: number): string {
   return `${value}%`;
@@ -50,6 +50,45 @@ function weightLabel(value: number): string {
   if (value === 0) return 'Normal';
   return value > 0 ? `+${value}` : String(value);
 }
+
+/** A collapsible section whose open state is remembered per key. */
+function disclosure(key: string, summary: Node[], ...content: Node[]): HTMLDetailsElement {
+  const details = h('details', { class: 'more' }, h('summary', {}, icon('chevron', 'icon chevron'), ...summary), ...content);
+  details.open = localStorage.getItem(OPEN_KEY_PREFIX + key) === '1';
+  details.addEventListener('toggle', () => localStorage.setItem(OPEN_KEY_PREFIX + key, details.open ? '1' : '0'));
+  return details;
+}
+
+/** A labeled field: label, status (badges and reset), control and an optional hint. */
+function fieldBlock(label: string, status: HTMLElement, control: HTMLElement, hint?: string): HTMLElement {
+  const head = h('div', { class: 'field-head' }, h('span', { class: 'field-label', text: label }), h('span', { class: 'spacer' }), status);
+  return h('div', { class: 'field' }, head, control, hint ? h('div', { class: 'field-hint', text: hint }) : null);
+}
+
+interface OverrideLabels {
+  /** Badge when the value is set here, e.g. "This site". */
+  set: string;
+  /** Tooltip of the "Default" badge: where the value comes from. */
+  inherited: string;
+  /** Tooltip of the reset button. */
+  reset: string;
+}
+
+/** Shows whether a value is set here (badge and reset button) or inherited ("Default"). */
+function renderOverride(status: HTMLElement, overridden: boolean, labels: OverrideLabels, onReset: () => void): void {
+  status.replaceChildren();
+  if (overridden) {
+    status.append(h('span', { class: 'badge badge-accent', text: labels.set }), iconButton('reset', labels.reset, onReset));
+  } else {
+    status.append(h('span', { class: 'badge', text: 'Default', title: labels.inherited }));
+  }
+}
+
+const SITE_LABELS: OverrideLabels = {
+  set: 'This site',
+  inherited: 'Comes from the all-sites defaults',
+  reset: 'Use the all-sites default',
+};
 
 export class ProfileEditor {
   readonly element: HTMLElement;
@@ -124,14 +163,7 @@ export class ProfileEditor {
     const secondaryFields = [spacingField, weightField, codeField, languageField];
 
     if (options.compact) {
-      const more = h(
-        'details',
-        { class: 'more' },
-        h('summary', {}, icon('chevron', 'icon chevron'), h('span', { text: 'More options' })),
-        ...secondaryFields,
-      );
-      more.open = localStorage.getItem(MORE_OPEN_KEY) === '1';
-      more.addEventListener('toggle', () => localStorage.setItem(MORE_OPEN_KEY, more.open ? '1' : '0'));
+      const more = disclosure('more', [h('span', { text: 'More options' })], ...secondaryFields);
       this.element = h('div', { class: 'editor' }, primary, h('section', { class: 'card' }, more));
     } else {
       this.element = h(
@@ -147,8 +179,7 @@ export class ProfileEditor {
   private field(name: ProfileField, label: string, control: HTMLElement, hint?: string): HTMLElement {
     const status = h('span', { class: 'row' });
     this.fieldStatus.set(name, status);
-    const head = h('div', { class: 'field-head' }, h('span', { class: 'field-label', text: label }), h('span', { class: 'spacer' }), status);
-    return h('div', { class: 'field' }, head, control, hint ? h('div', { class: 'field-hint', text: hint }) : null);
+    return fieldBlock(label, status, control, hint);
   }
 
   /** Shows a new state. */
@@ -167,16 +198,11 @@ export class ProfileEditor {
   }
 
   private renderStatus(field: ProfileField, status: HTMLElement): void {
-    status.replaceChildren();
-    if (this.state.scope !== 'site' || field === 'languages') return;
-    if (this.state.overridden(field)) {
-      status.append(
-        h('span', { class: 'badge badge-accent', text: 'This site' }),
-        iconButton('reset', 'Use the all-sites default', () => this.actions.resetField(field)),
-      );
-    } else {
-      status.append(h('span', { class: 'badge', text: 'Default', title: 'Comes from the all-sites defaults' }));
+    if (this.state.scope !== 'site' || field === 'languages') {
+      status.replaceChildren();
+      return;
     }
+    renderOverride(status, this.state.overridden(field), SITE_LABELS, () => this.actions.resetField(field));
   }
 
   private renderLanguages(): void {
@@ -202,7 +228,7 @@ export class ProfileEditor {
         this.languageRows.set(id, row);
       }
       this.languageList.append(row.element);
-      row.update(this.state.profile.languages[id] ?? null, this.state.scope === 'site' && this.state.languageOverridden(id));
+      row.update(this.state.profile.languages[id] ?? null, this.state.scope === 'site' && this.state.languageOverridden(id), this.state.profile);
     }
 
     this.languageAdd.replaceChildren(h('option', { text: 'Add a language font…', attrs: { value: '' } }));
@@ -222,11 +248,21 @@ export class ProfileEditor {
   }
 }
 
-/** One configured language: font, size and a sample in that language. */
+type LanguageSetting = 'lineSpacing' | 'weight';
+
+/**
+ * One configured language: font, size and a sample in that language, plus an
+ * Advanced section for line spacing and weight that otherwise follow the profile.
+ */
 class LanguageRow {
   readonly element: HTMLElement;
   private readonly picker: FontPicker;
   private readonly size: Slider;
+  private readonly spacing: Slider;
+  private readonly weight: Slider;
+  private readonly spacingStatus = h('span', { class: 'row' });
+  private readonly weightStatus = h('span', { class: 'row' });
+  private readonly advancedNote = h('span', { class: 'field-hint' });
   private readonly sample: HTMLElement;
   private readonly status: HTMLElement;
   private readonly notice: HTMLElement;
@@ -252,6 +288,27 @@ class LanguageRow {
         if (this.font) this.actions.setLanguage(language.id, { ...this.font, size: value });
       },
     });
+    this.spacing = new Slider({
+      label: `${language.label} line spacing`,
+      ...LIMITS.lineSpacing,
+      value: 100,
+      format: percent,
+      onInput: (value) => this.setSetting('lineSpacing', value),
+    });
+    this.weight = new Slider({
+      label: `${language.label} weight`,
+      ...LIMITS.weight,
+      value: 0,
+      format: weightLabel,
+      onInput: (value) => this.setSetting('weight', value),
+    });
+    const advanced = disclosure(
+      `language.${language.id}`,
+      [h('span', { text: 'Advanced' }), this.advancedNote],
+      fieldBlock('Line spacing', this.spacingStatus, this.spacing.element),
+      fieldBlock('Weight', this.weightStatus, this.weight.element),
+    );
+    advanced.classList.add('language-advanced');
     this.sample = h('div', { class: 'language-sample', text: language.sample, attrs: { lang: language.id, dir: 'auto' } });
     this.status = h('span', { class: 'row' });
     this.notice = h('div');
@@ -270,16 +327,35 @@ class LanguageRow {
       this.picker.element,
       this.sample,
       this.size.element,
+      advanced,
       this.notice,
     );
   }
 
-  update(font: LanguageFont | null, overridden: boolean): void {
+  /** Shows a language's settings; `profile` supplies the values its Advanced settings follow by default. */
+  update(font: LanguageFont | null, overridden: boolean, profile: Profile): void {
     this.font = font;
     this.picker.set(font?.family ?? null);
     this.size.set(font?.size ?? 100);
+    const spacing = font?.lineSpacing ?? profile.lineSpacing;
+    const weight = font?.weight ?? profile.weight;
+    this.spacing.set(spacing);
+    this.weight.set(weight);
+    const labels = (setting: string): OverrideLabels => ({
+      set: this.language.label,
+      inherited: `Follows the ${setting} setting above`,
+      reset: `Use the ${setting} setting above`,
+    });
+    renderOverride(this.spacingStatus, font?.lineSpacing !== undefined, labels('Line spacing'), () => this.setSetting('lineSpacing', undefined));
+    renderOverride(this.weightStatus, font?.weight !== undefined, labels('Weight'), () => this.setSetting('weight', undefined));
+    const notes = [
+      font?.lineSpacing !== undefined ? `Line spacing ${percent(font.lineSpacing)}` : '',
+      font?.weight !== undefined ? `Weight ${weightLabel(font.weight)}` : '',
+    ].filter(Boolean);
+    this.advancedNote.textContent = notes.length ? `\u00b7 ${notes.join(', ')}` : '';
     this.sample.style.fontFamily = font ? `${cssFamily(font.family)}, var(--font-ui)` : '';
     this.sample.style.fontSize = `${18 * ((font?.size ?? 100) / 100)}px`;
+    this.sample.style.fontWeight = String(Math.min(1000, Math.max(1, 400 + weight)));
     this.status.replaceChildren();
     if (overridden) {
       this.status.append(iconButton('reset', 'Use the all-sites default', () => this.actions.resetLanguage(this.language.id)));
@@ -306,7 +382,17 @@ class LanguageRow {
   private async choose(family: string | null): Promise<void> {
     if (family === null) return;
     const faces = await this.actions.resolveFaces(family);
-    this.actions.setLanguage(this.language.id, { family, faces, size: this.font?.size ?? 100 });
+    // Keep the language's other settings when only its font changes.
+    this.actions.setLanguage(this.language.id, { size: 100, ...this.font, family, faces });
+  }
+
+  /** Sets one Advanced setting, or makes it follow the profile again with `undefined`. */
+  private setSetting(setting: LanguageSetting, value: number | undefined): void {
+    if (!this.font) return;
+    const font: LanguageFont = { ...this.font };
+    if (value === undefined) delete font[setting];
+    else font[setting] = value;
+    this.actions.setLanguage(this.language.id, font);
   }
 
   private remove(): void {

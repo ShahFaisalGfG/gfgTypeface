@@ -9,7 +9,7 @@ gfg Font Changer is now **gfg Typeface**, rewritten from scratch.
 - All-sites defaults with per-site overrides and a per-site off switch.
 - Text size as a percentage of each site's own sizes, without layout breakage.
 - Matching of replacement fonts to the x-height of the fonts they replace.
-- Per-language fonts and sizes, applied per glyph inside mixed-language text.
+- Per-language fonts and sizes, applied per glyph inside mixed-language text, with optional per-language line spacing and weight.
 - Line spacing, weight and code font settings.
 - Live preview in the popup.
 - Settings page with site list, import, export and reset.

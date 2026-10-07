@@ -18,13 +18,13 @@ Make every site easy to read, in the font and size you like.
 
 gfg Typeface lets you pick a font, a text size, line spacing and weight for each site, or set defaults for all sites. Text sizes stay relative to what each site chose, so headings stay bigger than body text and menus, grids and fixed headers keep their shape.
 
-Read in more than one language? Give Urdu, Arabic, Persian, Hindi, Bengali, Chinese, Japanese, Korean, Russian and more their own font and size. The language font is used for every letter of that language, even inside English sentences, the way phones mix scripts.
+Read in more than one language? Give Urdu, Arabic, Persian, Hindi, Bengali, Chinese, Japanese, Korean, Russian and more their own font, size, line spacing and weight. The language font is used for every letter of that language, even inside English sentences, the way phones mix scripts.
 
 Features:
 - Fonts per site or for all sites, chosen from the fonts on your computer
 - Text size from 50% to 200% of the site's own sizes
 - Replacement fonts sized to match the font they replace
-- A font and size per language
+- A font, size, line spacing and weight per language
 - Line spacing, weight and a separate code font
 - Icon fonts, emoji and code keep working
 - The browser's own page zoom in the same popup

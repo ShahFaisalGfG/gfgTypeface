@@ -11,7 +11,7 @@ gfg Typeface changes how text looks on the web: pick a font, a text size, line s
 - **Fonts per site or for all sites.** Choose from the fonts installed on your computer. Sites without their own settings use your all-sites defaults; each site can override any setting or be switched off.
 - **Text size relative to the site.** 120% makes every piece of text 20% larger than the site made it, from headings to footnotes. Computed sizes and layout boxes stay untouched, so menus, grids and fixed headers keep their shape.
 - **Matched replacement fonts.** With "Match the original text size" on, a replacement font is sized so its lowercase letters are as tall as the font it replaces. Text keeps its visual size when you swap fonts.
-- **Language fonts.** Set a font and a size per language. The font applies to every letter of that language, even inside English sentences; the size applies to paragraphs written in that language. Urdu, Arabic and Persian share a script, so the extension tells them apart by the page's `lang` attributes and by letters only one of them uses.
+- **Language fonts.** Set a font and a size per language, and under **Advanced** its own line spacing and weight (for example taller lines for Nastaliq). The font applies to every letter of that language, even inside English sentences; size, line spacing and weight apply to paragraphs written in that language. Urdu, Arabic and Persian share a script, so the extension tells them apart by the page's `lang` attributes and by letters only one of them uses.
 - **Line spacing and weight.** Scale line spacing from 80% to 200% and make text lighter or bolder. Weight changes depend on the weights a font provides.
 - **Code font.** Replace monospace fonts in code blocks, or keep the site's own.
 - **Icons stay intact.** Icon fonts (Font Awesome, Material Symbols and others), emoji and private-use glyphs keep their fonts.
@@ -80,7 +80,7 @@ Settings, including the host names of sites you configure, are stored in your br
 - Browsers don't let extensions change their own pages (`chrome://`, the Chrome Web Store).
 - Apps that draw text on a canvas, such as Google Docs and Google Sheets, are not affected.
 - Boxes sized in `em` or `ch` keep their size while the text inside grows.
-- Per-language text size applies to whole paragraphs in that language. A Urdu word inside an English paragraph gets the Urdu font at the paragraph's size.
+- Per-language text size, line spacing and weight apply to whole paragraphs in that language. An Urdu word inside an English paragraph gets the Urdu font at the paragraph's size and spacing.
 - Fonts and line heights that a site changes only on hover keep their resting values.
 - A site's inline `!important` font rules, and `!important` rules in cascade layers that the site declares before the extension's own, win over your settings.
 - Browser sync storage holds settings for about 500 sites.

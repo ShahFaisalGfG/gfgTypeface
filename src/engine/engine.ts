@@ -5,11 +5,12 @@
  */
 
 import { cssFamily } from '../lib/fonts';
+import { getLanguage } from '../lib/languages';
 import { SHADOW_EVENT } from '../lib/hook-events';
 import type { Profile } from '../lib/settings';
 import { Detector, type DetectorHost, inheritsTypography } from './boundary';
 import { type FamilyKind, classifyFamily } from './classify';
-import { ALL_ATTRS, type FamilyInfo, type FontMetrics, buildFontFaces, buildSheet, familyRule } from './css';
+import { ALL_ATTRS, type FamilyInfo, type FontMetrics, buildFontFaces, buildSheet, familyRule, languageFamilyList } from './css';
 import { type Plan, createPlan } from './plan';
 import { type ProbeRequest, probeFonts } from './probe';
 import { collect, isInSkippedSubtree, isSkipped, markHost } from './tree';
@@ -121,10 +122,14 @@ export class Engine implements DetectorHost {
       this.stop();
       return;
     }
+    if (document.contentType && !/html/i.test(document.contentType)) return;
     const plan = createPlan(profile);
     const rescan = this.running && this.plan.key !== plan.key;
     const detectChanged = this.running && this.plan.detectLang !== plan.detectLang;
     this.plan = plan;
+    // Language faces must be in the document before their metrics can be measured.
+    this.rebuildFaces();
+    this.adopt(document);
     this.measureFontMetrics();
     this.measureFamilies([...this.families.values()]);
     this.rebuild();
@@ -192,6 +197,10 @@ export class Engine implements DetectorHost {
   private rebuild(): void {
     this.unflushed.clear();
     this.sheet.replaceSync(buildSheet(this.plan, this.families.values(), this.metrics));
+    this.rebuildFaces();
+  }
+
+  private rebuildFaces(): void {
     const faces = buildFontFaces(this.plan);
     if (faces !== this.faceText) {
       this.faceText = faces;
@@ -250,10 +259,24 @@ export class Engine implements DetectorHost {
     const requests: (ProbeRequest & { key: string })[] = [];
     if (matchSize && font) requests.push({ key: `a|${cssFamily(font)}`, family: cssFamily(font), aspect: true });
     if (matchSize && codeFont) requests.push({ key: `a|${cssFamily(codeFont)}`, family: cssFamily(codeFont), aspect: true });
-    this.measure(requests);
+    // Measured with the language's own text, so tall scripts such as Nastaliq set the ratio.
+    const languages = this.plan.anySpacing
+      ? this.plan.languages.map((language) => {
+          const family = languageFamilyList(this.plan, language);
+          const text = getLanguage(language.id)?.sample ?? 'x';
+          return { id: language.id, request: { key: `l|${family}|${text}`, family, text, normal: true } };
+        })
+      : [];
+    this.measure([...requests, ...languages.map(({ request }) => request)]);
+    const languageNormal: Record<string, number> = {};
+    for (const { id, request } of languages) {
+      const ratio = this.cached(request.key);
+      if (ratio) languageNormal[id] = ratio;
+    }
     this.metrics = {
       mainAspect: font ? this.cached(`a|${cssFamily(font)}`) : undefined,
       codeAspect: codeFont ? this.cached(`a|${cssFamily(codeFont)}`) : undefined,
+      languageNormal,
     };
   }
 
@@ -270,18 +293,19 @@ export class Engine implements DetectorHost {
 
   /** True when rules depend on measured font metrics, which change as web fonts load. */
   private usesMetrics(): boolean {
-    return this.needsAspects() || this.plan.spacing !== 1;
+    return this.needsAspects() || this.plan.anySpacing;
   }
 
   private metricSignature(): string {
     const families = [...this.families.values()].map((family) => `${family.exAspect}/${family.normalRatio}`);
-    return `${this.metrics.mainAspect}/${this.metrics.codeAspect}|${families.join(',')}`;
+    const { mainAspect, codeAspect, languageNormal } = this.metrics;
+    return `${mainAspect}/${codeAspect}|${families.join(',')}|${JSON.stringify(languageNormal)}`;
   }
 
   private measureFamilies(families: FamilyInfo[]): void {
     if (!families.length) return;
     const needAspect = this.needsAspects();
-    const needNormal = this.plan.spacing !== 1;
+    const needNormal = this.plan.anySpacing;
     if (!needAspect && !needNormal) return;
     const requests: (ProbeRequest & { key: string })[] = [];
     for (const family of families) {
@@ -301,7 +325,6 @@ export class Engine implements DetectorHost {
   // Lifecycle
 
   private start(): void {
-    if (document.contentType && !/html/i.test(document.contentType)) return;
     this.running = true;
     this.initialPass = true;
     this.adopt(document);

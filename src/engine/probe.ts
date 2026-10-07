@@ -11,6 +11,8 @@ export interface ProbeRequest {
   aspect?: boolean;
   /** Measure `line-height: normal` as a ratio of the font size. */
   normal?: boolean;
+  /** Text to measure with, so fonts limited to a script (via `unicode-range`) take part. */
+  text?: string;
 }
 
 export interface ProbeResult {
@@ -32,8 +34,10 @@ export function probeFonts(requests: ProbeRequest[]): ProbeResult[] {
   const root = host.attachShadow({ mode: 'closed' });
   const nodes = requests.map((request) => {
     const node = document.createElement('div');
-    node.textContent = 'x';
-    node.style.cssText = `position: absolute; white-space: nowrap; font: ${SIZE}px/normal ${request.family}; font-size-adjust: from-font;`;
+    node.textContent = request.text ?? 'x';
+    // `from-font` reports the aspect but also resizes fallback fonts, so normal line heights skip it.
+    const adjust = request.aspect ? ' font-size-adjust: from-font;' : '';
+    node.style.cssText = `position: absolute; white-space: nowrap; font: ${SIZE}px/normal ${request.family};${adjust}`;
     root.append(node);
     return node;
   });
