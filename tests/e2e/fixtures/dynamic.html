@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Dynamic</title>
+    <style>
+      body { font: 16px Arial, sans-serif; }
+      .serif { font-family: 'Times New Roman', serif; }
+    </style>
+  </head>
+  <body>
+    <div id="host-open"></div>
+    <div id="host-closed"></div>
+    <div id="late"></div>
+    <iframe id="frame" srcdoc="<p id='f' style='font-family: Arial'>Frame text</p>"></iframe>
+    <script>
+      const open = document.getElementById('host-open').attachShadow({ mode: 'open' });
+      open.innerHTML = '<p id="so" style="font-family: \'Times New Roman\'">Open shadow</p><slot></slot>';
+      const closed = document.getElementById('host-closed').attachShadow({ mode: 'closed' });
+      closed.innerHTML = '<p id="sc" style="font-family: \'Times New Roman\'">Closed shadow</p>';
+      window.closedRoot = closed;
+      window.addLate = () => {
+        const root = document.getElementById('late').attachShadow({ mode: 'open' });
+        root.innerHTML = '<p id="sl" style="font-family: \'Times New Roman\'">Late shadow</p>';
+        // Frameworks like Lit replace adopted sheets right after attaching.
+        root.adoptedStyleSheets = [new CSSStyleSheet()];
+      };
+      window.addNodes = () => {
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = '<h2 id="dyn" class="serif">Dynamic <span id="dyn-child">child</span></h2>';
+        document.body.append(wrapper);
+      };
+    </script>
+  </body>
+</html>

@@ -1,0 +1,74 @@
+body {
+  width: 368px;
+  min-height: 200px;
+}
+
+#app {
+  padding: var(--space-3);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.header img {
+  width: 32px;
+  height: 32px;
+  flex: none;
+}
+
+.header .titles {
+  flex: 1;
+  min-width: 0;
+}
+
+.header h1 {
+  margin: 0;
+  font: 650 15px/1.2 var(--font-display);
+}
+
+.header .site {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 12px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.scope {
+  margin-bottom: var(--space-3);
+}
+
+.zoom {
+  margin-top: var(--space-3);
+}
+
+.power {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.zoom .row {
+  justify-content: space-between;
+}
+
+.zoom output {
+  min-width: 52px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+}
+
+.footer {
+  display: flex;
+  gap: var(--space-2);
+  justify-content: space-between;
+  margin-top: var(--space-3);
+}
