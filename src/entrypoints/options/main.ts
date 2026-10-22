@@ -29,6 +29,14 @@ async function resolveFaces(family: string): Promise<LocalFace[]> {
   return probeFaces(family);
 }
 
+/** The installed version, its author, and links to the releases and source on the project page. */
+function aboutLine(): HTMLParagraphElement {
+  const { version, homepage_url: homepage } = browser.runtime.getManifest();
+  const link = (text: string, href: string) => h('a', { text, attrs: { href, target: '_blank', rel: 'noreferrer' } });
+  const links = homepage ? [' · ', link('Check for updates', `${homepage}/releases/latest`), ' · ', link('Source code', homepage)] : [];
+  return h('p', { class: 'about' }, `gfg Typeface ${version} by Shah Faisal`, ...links);
+}
+
 function errorMessage(error: unknown): string {
   if (error instanceof StorageQuotaError) return error.message;
   return error instanceof Error ? error.message : String(error);
@@ -264,6 +272,7 @@ async function main(): Promise<void> {
           class: 'about',
           text: 'Settings sync through your browser account. Text size is relative to each site’s own sizes, and page layouts stay intact.',
         }),
+        aboutLine(),
       ),
     ),
   );

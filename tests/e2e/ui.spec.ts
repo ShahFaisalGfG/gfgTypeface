@@ -112,3 +112,14 @@ test('options page lists, edits, removes and imports sites', async ({ context, w
   await expect(options.getByText('Imported the all-sites defaults and 1 site.')).toBeVisible();
   await expect(nav.getByRole('button', { name: 'imported.dev' })).toBeVisible();
 });
+
+test('options page shows the installed version and links to its releases', async ({ context, worker, extensionId }) => {
+  const options = await context.newPage();
+  await options.goto(`chrome-extension://${extensionId}/options.html`);
+  const { version, homepage_url: homepage } = await worker.evaluate(() => chrome.runtime.getManifest());
+
+  expect(homepage).toBe('https://github.com/ShahFaisalGfG/gfgTypeface');
+  await expect(options.getByText(`gfg Typeface ${version} by Shah Faisal`)).toBeVisible();
+  await expect(options.getByRole('link', { name: 'Check for updates' })).toHaveAttribute('href', `${homepage}/releases/latest`);
+  await expect(options.getByRole('link', { name: 'Source code' })).toHaveAttribute('href', homepage!);
+});

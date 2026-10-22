@@ -151,6 +151,14 @@ body {
   font-size: 12px;
 }
 
+.about a {
+  color: var(--accent);
+}
+
+.about a:hover {
+  color: var(--accent-hover);
+}
+
 @media (max-width: 760px) {
   .layout {
     grid-template-columns: 1fr;

@@ -13,10 +13,14 @@ export default defineConfig({
   },
   manifestVersion: 3,
   targetBrowsers: ['chrome'],
+  zip: {
+    artifactTemplate: 'gfgTypeface_{{version}}_{{browser}}.zip',
+  },
   manifest: {
     name: 'gfg Typeface',
     short_name: 'Typeface',
     description: 'Per-site fonts, text size and language fonts. Sizes stay relative to each site, layouts stay intact.',
+    homepage_url: 'https://github.com/ShahFaisalGfG/gfgTypeface',
     minimum_chrome_version: '133',
     permissions: ['storage', 'fontSettings', 'contextMenus', 'scripting'],
     host_permissions: ['<all_urls>'],
