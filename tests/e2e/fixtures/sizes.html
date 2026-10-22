@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Sizes</title>
+    <style>
+      @font-face {
+        font-family: 'Fake Icons';
+        src: local('Segoe MDL2 Assets'), local('Segoe Fluent Icons');
+      }
+      body { margin: 20px; font: 16px/1.5 Arial, sans-serif; }
+      span { white-space: nowrap; }
+      h1 { font-family: Georgia, serif; font-size: 32px; }
+      .px { font-size: 20px; }
+      .em { font-size: 1.25em; }
+      .rem { font-size: 1.5rem; }
+      .clamp { font-size: clamp(14px, 2vw, 30px); }
+      .explicit { font-family: Arial, sans-serif; }
+      .icon { font-family: 'Fake Icons'; }
+      .material-icons { font-family: 'Material Icons', sans-serif; }
+      .lh-px { line-height: 30px; }
+      .lh-num { line-height: 2; }
+      .lh-normal { line-height: normal; }
+      .lh-em { line-height: 2em; }
+    </style>
+  </head>
+  <body>
+    <h1 id="h1"><span id="h1s">Heading</span></h1>
+    <p id="p"><span id="ps">Body text sample</span></p>
+    <p class="px"><span id="pxs">Pixel text</span></p>
+    <div class="em"><span id="ems">Em text</span> <span class="em"><span id="ems2">Nested em</span></span></div>
+    <p class="rem"><span id="rems">Rem text</span></p>
+    <p class="clamp"><span id="clamps">Clamp text</span></p>
+    <div class="explicit"><p class="explicit" id="explicit">Explicit same family</p></div>
+    <pre id="pre"><code id="code">const answer = 42;</code></pre>
+    <p><span class="icon" id="pua">&#xE700;</span> <span class="material-icons" id="lig">home</span></p>
+    <p class="lh-px" id="lhpx">Line px</p>
+    <p class="lh-num" id="lhnum">Line number <span id="lhnum-child" style="font-size: 10px">small</span></p>
+    <p class="lh-normal" id="lhnormal">Line normal</p>
+    <p class="lh-em" id="lhem">Line em</p>
+    <p id="weights">Normal <b id="bold">bold</b> <span style="font-weight: 300" id="light">light</span></p>
+    <div contenteditable="true" id="editor"><p id="edp" style="font-family: Georgia">Editable</p></div>
+    <input id="input" value="Input text" />
+    <svg width="200" height="40"><text id="svgtext" x="0" y="20">Chart label</text></svg>
+  </body>
+</html>

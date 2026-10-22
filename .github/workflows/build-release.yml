@@ -1,0 +1,86 @@
+name: Build and Release
+
+# Triggered by pushing a version tag, e.g.: git tag v4.0.0 && git push origin v4.0.0
+on:
+  push:
+    tags:
+      - 'v[0-9]*'
+
+permissions:
+  contents: read
+
+jobs:
+  # The release zip is named after package.json's version and the release after the tag, so the
+  # two must agree, and the release notes for that version must exist. Checked before the tests.
+  version:
+    runs-on: ubuntu-latest
+
+    outputs:
+      ver: ${{ steps.meta.outputs.VER }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Check the tag matches the version
+        id: meta
+        shell: bash
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          ver=$(node -p "require('./package.json').version")
+          if [ "$TAG" != "v$ver" ]; then
+            echo "::error::Tag $TAG does not match package.json version (v$ver)."
+            exit 1
+          fi
+          if [ ! -f "release_notes/release_notes_v$ver.md" ]; then
+            echo "::error::release_notes/release_notes_v$ver.md is missing."
+            exit 1
+          fi
+          echo "VER=$ver" >> "$GITHUB_OUTPUT"
+
+  tests:
+    needs: version
+    uses: ./.github/workflows/tests.yml
+
+  release:
+    needs: [version, tests]
+    runs-on: windows-2025
+
+    permissions:
+      contents: write  # gh release create
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Production build of .output/chrome-mv3, zipped as .output/gfgTypeface_<version>_chrome.zip
+      # with manifest.json at the root, ready to unzip and load unpacked.
+      - name: Build the extension zip
+        run: npm run zip
+
+      - name: Create GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          VER: ${{ needs.version.outputs.ver }}
+        run: |
+          gh release create $env:TAG `
+            --title "gfg Typeface v$env:VER" `
+            --notes-file "release_notes/release_notes_v$env:VER.md" `
+            ".output/gfgTypeface_${env:VER}_chrome.zip"
+          if ($LASTEXITCODE -ne 0) { throw "gh release create failed (exit $LASTEXITCODE)" }
