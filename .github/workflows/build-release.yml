@@ -72,15 +72,24 @@ jobs:
       - name: Build the extension zip
         run: npm run zip
 
-      - name: Create GitHub Release
+      # A re-run, or a tag pushed again, replaces the zip of a release that already exists instead
+      # of failing because the release is there.
+      - name: Create or update GitHub Release
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
           VER: ${{ needs.version.outputs.ver }}
         run: |
-          gh release create $env:TAG `
-            --title "gfg Typeface v$env:VER" `
-            --notes-file "release_notes/release_notes_v$env:VER.md" `
-            ".output/gfgTypeface_${env:VER}_chrome.zip"
-          if ($LASTEXITCODE -ne 0) { throw "gh release create failed (exit $LASTEXITCODE)" }
+          $zip = ".output/gfgTypeface_${env:VER}_chrome.zip"
+          gh release view $env:TAG *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $env:TAG $zip --clobber
+            if ($LASTEXITCODE -ne 0) { throw "gh release upload failed (exit $LASTEXITCODE)" }
+          } else {
+            gh release create $env:TAG `
+              --title "gfg Typeface v$env:VER" `
+              --notes-file "release_notes/release_notes_v$env:VER.md" `
+              $zip
+            if ($LASTEXITCODE -ne 0) { throw "gh release create failed (exit $LASTEXITCODE)" }
+          }

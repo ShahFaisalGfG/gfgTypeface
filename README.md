@@ -258,7 +258,7 @@ To release a version:
    git push origin v4.0.0
    ```
 
-The [Build and Release](.github/workflows/build-release.yml) workflow checks that the tag matches `package.json` and that the release notes exist, runs the full test suite, builds the zip, and publishes the GitHub release with the release notes as its text.
+The [Build and Release](.github/workflows/build-release.yml) workflow checks that the tag matches `package.json` and that the release notes exist, runs the full test suite, builds the zip, and publishes the GitHub release with the release notes as its text. Re-running it, or pushing the tag again, replaces the zip of the existing release.
 
 ---
 
