@@ -31,7 +31,8 @@ const settings = {
 const context = await chromium.launchPersistentContext('', {
   channel: 'chromium',
   headless: true,
-  args: [`--disable-extensions-except=${extension}`, `--load-extension=${extension}`],
+  // GitHub stays out of reach, so the update check can't put a notice in the screenshots.
+  args: [`--disable-extensions-except=${extension}`, `--load-extension=${extension}`, '--host-resolver-rules=MAP api.github.com ~NOTFOUND'],
 });
 try {
   const worker = context.serviceWorkers()[0] ?? (await context.waitForEvent('serviceworker'));

@@ -3,10 +3,12 @@ import { probeFaces } from '../../lib/fonts';
 import { PREVIEW_PORT, type PreviewMessage } from '../../lib/messages';
 import { siteKeyFromUrl } from '../../lib/site';
 import { StorageQuotaError, loadSettings } from '../../lib/storage';
+import { loadUpdateState, watchUpdateState } from '../../lib/updates';
 import { Segmented, createSwitch } from '../../ui/controls';
 import { h, icon, iconButton } from '../../ui/dom';
 import { ProfileEditor, type Scope } from '../../ui/profile-editor';
 import { SettingsSession } from '../../ui/settings-session';
+import { updateNotice } from '../../ui/update-notice';
 
 /** Chrome's own zoom steps, so the popup matches Ctrl +/-. */
 const ZOOM_LEVELS = [0.25, 0.33, 0.5, 0.67, 0.75, 0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4, 5];
@@ -69,11 +71,16 @@ async function main(): Promise<void> {
   const app = document.getElementById('app')!;
   const tab = await targetTab();
   const site = siteKeyFromUrl(tab?.url);
-  const stored = await loadSettings(site);
+  const [stored, updates] = await Promise.all([loadSettings(site), loadUpdateState()]);
 
   let port: Browser.runtime.Port | undefined;
   const status = h('div', { class: 'status' });
   let saveError: string | null = null;
+  const showError = (error: unknown) => {
+    saveError = errorMessage(error);
+    render();
+  };
+  let update = updateNotice(updates, showError);
 
   const preview = () => {
     if (!site || tab?.id === undefined) return;
@@ -97,10 +104,7 @@ async function main(): Promise<void> {
       render();
       preview();
     },
-    onError: (error) => {
-      saveError = errorMessage(error);
-      render();
-    },
+    onError: showError,
   });
 
   const editor = new ProfileEditor(session.actions(probeFaces), { compact: true });
@@ -164,6 +168,7 @@ async function main(): Promise<void> {
       status.append(h('div', { class: 'notice' }, icon('power'), h('span', { text })));
     }
     if (saveError) status.append(h('div', { class: 'notice notice-error' }, icon('info'), h('span', { text: saveError })));
+    if (update) status.append(update);
 
     editor.update(session.editorState());
     editor.element.classList.toggle('off', !session.enabled);
@@ -182,6 +187,11 @@ async function main(): Promise<void> {
   );
   app.removeAttribute('aria-busy');
   render();
+
+  watchUpdateState((state) => {
+    update = updateNotice(state, showError);
+    render();
+  });
 
   // Keep pending edits when the popup closes before the debounced save.
   window.addEventListener('pagehide', () => void session.flush());

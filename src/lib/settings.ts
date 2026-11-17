@@ -86,7 +86,8 @@ export const PROFILE_FIELDS: readonly ProfileField[] = [
 
 const MAX_FAMILY_LENGTH = 200;
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+/** Whether `value` is a plain object, as stored or parsed from JSON. */
+export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 

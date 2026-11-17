@@ -46,7 +46,8 @@ gfg Typeface changes how text looks on the web: pick a font, a text size, line s
   - [Contributing](#contributing)
   - [Roadmap](#roadmap)
   - [Changelog](#changelog)
-    - [v4.0.0 - October 2026 *(current)*](#v400---october-2026-current)
+    - [v4.0.1 - November 2026 *(current)*](#v401---november-2026-current)
+    - [v4.0.0 - October 2026](#v400---october-2026)
     - [v3.0 - December 2024 (gfg Font Changer)](#v30---december-2024-gfg-font-changer)
   - [License \& Credits](#license--credits)
   - [Support the Project](#support-the-project)
@@ -70,7 +71,7 @@ Browser zoom makes everything bigger, including the layout. Font extensions usua
 - 🔤 **Relative text size** - 120% makes every piece of text 20% larger than the site made it, from headings to footnotes
 - 🧱 **Layouts stay intact** - computed sizes and layout boxes don't change, so menus, grids and fixed headers keep their shape
 - 🌐 **Language fonts per glyph** - an Urdu word inside an English sentence gets your Urdu font, the way phones mix scripts
-- 🔒 **Private** - settings stay in your browser's sync storage; nothing is sent anywhere else
+- 🔒 **Private** - settings stay in your browser's sync storage; the only request is an anonymous daily update check to GitHub, which you can turn off
 - ⚡ **No flash, no lag** - work runs before the browser paints, and large pages are processed in slices
 
 ---
@@ -88,6 +89,7 @@ Browser zoom makes everything bigger, including the layout. Font extensions usua
 - **Live preview.** Changes show on the page while you drag a slider.
 - **Everywhere on the page.** Works in iframes, open and closed shadow DOM (web components such as Reddit's), pages that load content as you scroll, and pages with strict Content Security Policies.
 - **Settings page.** Every site with its own settings in one list, plus import, export and reset.
+- **Update notice.** Once a day the extension asks GitHub for the latest release, and when it is newer, the popup and the settings page say so with a download link. Nothing is downloaded or installed on its own. See [Updating](#updating).
 
 ---
 
@@ -97,7 +99,7 @@ gfg Typeface is distributed on [GitHub Releases](https://github.com/ShahFaisalGf
 
 | Package | Browsers |
 | --- | --- |
-| [`gfgTypeface_4.0.0_chrome.zip`](https://github.com/ShahFaisalGfG/gfgTypeface/releases/latest) | Chrome, Edge, Brave, Opera, Vivaldi and other Chromium browsers based on Chromium 133 or newer |
+| [`gfgTypeface_4.0.1_chrome.zip`](https://github.com/ShahFaisalGfG/gfgTypeface/releases/latest) | Chrome, Edge, Brave, Opera, Vivaldi and other Chromium browsers based on Chromium 133 or newer |
 
 1. Download `gfgTypeface_<version>_chrome.zip` from the [latest release](https://github.com/ShahFaisalGfG/gfgTypeface/releases/latest) and unzip it into a folder you will keep, for example `Documents\Extensions\gfgTypeface`.
 2. Open the extensions page (`chrome://extensions`, `edge://extensions` or `opera://extensions`) and turn on **Developer mode**.
@@ -109,7 +111,11 @@ Firefox is not supported: it has no API for listing installed fonts.
 
 ### Updating
 
-Extensions loaded unpacked don't update on their own. The settings page shows the installed version next to a **Check for updates** link to the latest release. To update:
+Extensions loaded unpacked don't update on their own, so gfg Typeface tells you when a new version is out. Once a day it asks GitHub for the latest release, and when that release is newer than yours, the popup and the settings page show **gfg Typeface X.Y.Z is available** with links to download the zip, read what's new and follow these steps. **Dismiss** hides the notice until the next version. Nothing is downloaded or installed on its own.
+
+The check is one anonymous request to `api.github.com` a day. To turn it off, switch off **Check for updates once a day** on the settings page. The settings page also shows the installed version next to a **Check for updates** link to the latest release.
+
+To update:
 
 1. Download the new zip and unzip it over the folder you loaded, replacing its files.
 2. On the extensions page, press **Reload** on gfg Typeface.
@@ -177,12 +183,13 @@ Work runs before the browser paints, so changed pages appear without a flash of 
 | `fontSettings` | List the fonts installed on your computer. |
 | `scripting` | Apply settings to tabs that were already open when the extension was installed or updated. |
 | `contextMenus` | The right-click menu entries. |
+| `alarms` | Check for a new release once a day. The browser shows no warning for it. |
 
 ---
 
 ## Privacy
 
-Settings, including the host names of sites you configure, are stored in your browser's sync storage. Nothing is sent anywhere else. See [PRIVACY.md](PRIVACY.md).
+Settings, including the host names of sites you configure, are stored in your browser's sync storage. The only request the extension sends is the daily update check: one anonymous request to `api.github.com` that carries none of your settings or sites. Turn it off with **Check for updates once a day** on the settings page. See [PRIVACY.md](PRIVACY.md).
 
 ---
 
@@ -224,7 +231,7 @@ npm run dev
 | `npm run icons` | Renders `assets/icon.svg` to `public/icon/*.png` |
 | `npm run store-assets` | Renders the screenshots and the promo tile to `store/assets/` |
 
-End-to-end tests use local fixture pages served by `tests/e2e/server.mjs` and never contact live sites. They need Playwright's Chromium (`npx playwright install chromium`); branded Chrome ignores unpacked extensions loaded from the command line. Some tests measure text in fonts that ship with Windows (Georgia, Verdana, Courier New), so CI runs them on Windows.
+End-to-end tests use local fixture pages served by `tests/e2e/server.mjs` and never contact live sites; the browser they launch can't resolve `api.github.com`, so the update check stays offline. They need Playwright's Chromium (`npx playwright install chromium`); branded Chrome ignores unpacked extensions loaded from the command line. Some tests measure text in fonts that ship with Windows (Georgia, Verdana, Courier New), so CI runs them on Windows.
 
 ### Project layout
 
@@ -232,7 +239,7 @@ End-to-end tests use local fixture pages served by `tests/e2e/server.mjs` and ne
 src/
   entrypoints/   background service worker, content scripts, popup and settings page
   engine/        the content-side engine: boundary detection, CSS builder, traversal, font metrics
-  lib/           settings model, storage, languages, fonts, site keys, commands
+  lib/           settings model, storage, languages, fonts, site keys, commands, update check
   ui/            shared design tokens and components used by the popup and settings page
 tests/unit/      Vitest unit tests
 tests/e2e/       Playwright tests and fixture pages
@@ -288,7 +295,12 @@ Have a feature idea or a site that doesn't look right? [Open an issue](https://g
 
 ## Changelog
 
-### v4.0.0 - October 2026 *(current)*
+### v4.0.1 - November 2026 *(current)*
+- 🔔 **Update notice:** once a day the extension asks GitHub for the latest release; when it is newer, the popup and the settings page show a notice with links to the zip, the release notes and the update steps. Nothing is downloaded or installed on its own.
+- ⚙️ **Updates switch:** **Check for updates once a day** on the settings page, on by default.
+- 🔒 **New permission:** `alarms`, which schedules the daily check and shows no install warning.
+
+### v4.0.0 - October 2026
 - ✨ **Renamed and rewritten:** gfg Font Changer is now gfg Typeface, rewritten from scratch in TypeScript with WXT.
 - 🔤 **Relative text size:** a percentage of each site's own sizes, without layout breakage, and replacement fonts matched to the x-height of the fonts they replace.
 - 🌐 **Language fonts:** per-language fonts and sizes, applied per glyph inside mixed-language text, with optional per-language line spacing and weight.

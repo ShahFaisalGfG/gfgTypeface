@@ -22,7 +22,7 @@ export default defineConfig({
     description: 'Per-site fonts, text size and language fonts. Sizes stay relative to each site, layouts stay intact.',
     homepage_url: 'https://github.com/ShahFaisalGfG/gfgTypeface',
     minimum_chrome_version: '133',
-    permissions: ['storage', 'fontSettings', 'contextMenus', 'scripting'],
+    permissions: ['storage', 'fontSettings', 'contextMenus', 'scripting', 'alarms'],
     host_permissions: ['<all_urls>'],
     action: {
       default_title: 'gfg Typeface',

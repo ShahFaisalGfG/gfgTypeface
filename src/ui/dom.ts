@@ -75,6 +75,11 @@ export function icon(name: keyof typeof ICONS, className = 'icon'): SVGSVGElemen
   return svg;
 }
 
+/** Creates a link that opens in a new tab without sending a referrer. */
+export function externalLink(text: string, href: string, title?: string): HTMLAnchorElement {
+  return h('a', { text, title, attrs: { href, target: '_blank', rel: 'noreferrer' } });
+}
+
 /** Creates an icon-only button with an accessible name and tooltip. */
 export function iconButton(name: keyof typeof ICONS, label: string, onClick: () => void, className = 'btn btn-ghost btn-icon btn-sm'): HTMLButtonElement {
   const button = h('button', { class: className, title: label, attrs: { type: 'button', 'aria-label': label }, on: { click: onClick } });

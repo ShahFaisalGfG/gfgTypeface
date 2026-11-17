@@ -11,10 +11,12 @@ import {
   resetAll,
   watchSettings,
 } from '../../lib/storage';
+import { isUnpacked, loadUpdateState, saveUpdateState, watchUpdateState } from '../../lib/updates';
 import { createSwitch } from '../../ui/controls';
-import { h, icon } from '../../ui/dom';
+import { externalLink, h, icon } from '../../ui/dom';
 import { ProfileEditor } from '../../ui/profile-editor';
 import { SettingsSession } from '../../ui/settings-session';
+import { updateNotice } from '../../ui/update-notice';
 
 /** Exact faces via the Local Font Access API when allowed, name probing otherwise. */
 async function resolveFaces(family: string): Promise<LocalFace[]> {
@@ -32,9 +34,30 @@ async function resolveFaces(family: string): Promise<LocalFace[]> {
 /** The installed version, its author, and links to the releases and source on the project page. */
 function aboutLine(): HTMLParagraphElement {
   const { version, homepage_url: homepage } = browser.runtime.getManifest();
-  const link = (text: string, href: string) => h('a', { text, attrs: { href, target: '_blank', rel: 'noreferrer' } });
-  const links = homepage ? [' · ', link('Check for updates', `${homepage}/releases/latest`), ' · ', link('Source code', homepage)] : [];
+  const links = homepage
+    ? [' · ', externalLink('Check for updates', `${homepage}/releases/latest`), ' · ', externalLink('Source code', homepage)]
+    : [];
   return h('p', { class: 'about' }, `gfg Typeface ${version} by Shah Faisal`, ...links);
+}
+
+/** The Updates card around the "Check for updates once a day" switch. */
+function updatesCard(toggle: HTMLInputElement): HTMLElement {
+  return h(
+    'section',
+    { class: 'card updates' },
+    h('h3', { class: 'card-title', text: 'Updates' }),
+    h(
+      'label',
+      { class: 'field-head' },
+      h('span', { class: 'field-label', text: 'Check for updates once a day' }),
+      h('span', { class: 'spacer' }),
+      toggle,
+    ),
+    h('div', {
+      class: 'field-hint',
+      text: 'Asks GitHub whether a newer version is out and shows a notice here and in the popup. Nothing is downloaded or installed on its own.',
+    }),
+  );
 }
 
 function errorMessage(error: unknown): string {
@@ -89,7 +112,11 @@ async function main(): Promise<void> {
     onError: (error: unknown) => showMessage(`Settings could not be saved: ${errorMessage(error)}`, true),
   };
 
-  const { global } = await loadSettings(null);
+  const [{ global }, updates, unpacked] = await Promise.all([loadSettings(null), loadUpdateState(), isUnpacked()]);
+  let update = updateNotice(updates, hooks.onError);
+  const updatesToggle = createSwitch('Check for updates once a day', updates.enabled, (checked) => {
+    saveUpdateState({ enabled: checked }).catch(hooks.onError);
+  });
   let session = new SettingsSession(selected, global, sites.get(selected ?? '') ?? {}, hooks);
   if (!selected) session.scope = 'global';
   let currentActions = session.actions(resolveFaces);
@@ -184,6 +211,7 @@ async function main(): Promise<void> {
     if (message) {
       status.append(h('div', { class: `notice${message.error ? ' notice-error' : ''}` }, icon(message.error ? 'info' : 'check'), h('span', { text: message.text })));
     }
+    if (update) status.append(update);
   }
 
   function renderContent(): void {
@@ -268,6 +296,8 @@ async function main(): Promise<void> {
         h('div', { class: 'content-head' }, title, h('label', {}, powerLabel, power), resetButton, deleteButton),
         status,
         editor.element,
+        // Only copies loaded unpacked check for updates; the browser updates the others.
+        unpacked ? updatesCard(updatesToggle) : null,
         h('p', {
           class: 'about',
           text: 'Settings sync through your browser account. Text size is relative to each site’s own sizes, and page layouts stay intact.',
@@ -285,6 +315,11 @@ async function main(): Promise<void> {
     const { global: latest } = await loadSettings(null);
     session.replace(latest, selected ? (sites.get(selected) ?? {}) : {});
     renderNav();
+  });
+  watchUpdateState((state) => {
+    update = updateNotice(state, hooks.onError);
+    updatesToggle.checked = state.enabled;
+    renderStatus();
   });
 
   window.addEventListener('pagehide', () => void session.flush());
