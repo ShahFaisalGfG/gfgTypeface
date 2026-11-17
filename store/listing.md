@@ -33,7 +33,7 @@ Features:
 - Toolbar badge, keyboard shortcuts and a right-click menu
 - Works with iframes, web components and pages that load content as you scroll
 
-Your settings sync through your browser account. Nothing is collected or sent anywhere.
+Your settings sync through your browser account. Nothing is collected or sent anywhere: the store keeps this copy up to date, so it never checks GitHub for updates.
 
 ## Single purpose
 
@@ -46,11 +46,12 @@ Change the fonts, text size, line spacing and weight of web pages, per site and 
 - **fontSettings:** lists the fonts installed on the user's computer for the font pickers.
 - **scripting:** applies the user's settings to tabs that were already open when the extension was installed or updated, so they work without reloading.
 - **contextMenus:** adds "Change fonts on this site" and "All settings" to the right-click menu.
+- **alarms:** schedules a once-a-day check for a newer release in copies loaded unpacked from the GitHub release zip, which the browser never updates. Copies installed from this store skip the check and never set the alarm.
 
 ## Data usage
 
-- The extension does not collect or transmit user data.
-- Stored data: user settings, including host names of sites the user configured, in the browser's sync storage only.
+- The extension does not collect or transmit user data. Copies loaded unpacked from GitHub ask `api.github.com` once a day for the latest release; that request is anonymous and carries no user data, and store installs never send it.
+- Stored data: user settings, including host names of sites the user configured, in the browser's sync storage. Copies loaded unpacked also keep the update check's switch, last check time, latest release found and dismissed version in the browser's local storage on the device.
 - Not sold, not transferred to third parties, not used for purposes unrelated to the single purpose, not used for creditworthiness or lending.
 
 ## Privacy policy

@@ -19,7 +19,12 @@ export const test = base.extend<Fixtures>({
     const context = await chromium.launchPersistentContext('', {
       channel: 'chromium',
       headless: true,
-      args: [`--disable-extensions-except=${EXTENSION_PATH}`, `--load-extension=${EXTENSION_PATH}`],
+      args: [
+        `--disable-extensions-except=${EXTENSION_PATH}`,
+        `--load-extension=${EXTENSION_PATH}`,
+        // The update check must never reach GitHub from a test run.
+        '--host-resolver-rules=MAP api.github.com ~NOTFOUND',
+      ],
     });
     await use(context);
     await context.close();

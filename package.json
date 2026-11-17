@@ -2,7 +2,7 @@
   "name": "gfg-typeface",
   "description": "Per-site fonts, text size and language fonts for Chromium browsers.",
   "private": true,
-  "version": "4.0.0",
+  "version": "4.0.1",
   "license": "MIT",
   "author": "Shah Faisal",
   "repository": {

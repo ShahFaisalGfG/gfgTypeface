@@ -358,6 +358,35 @@ select {
   color: var(--danger);
 }
 
+.notice-accent {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+
+.notice-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px var(--space-3);
+  margin-top: 2px;
+}
+
+.notice-actions a,
+.notice-actions button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.notice-actions a:hover,
+.notice-actions button:hover {
+  text-decoration-thickness: 2px;
+}
+
 /* Slider */
 
 .slider {

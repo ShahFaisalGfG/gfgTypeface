@@ -4,6 +4,7 @@ import { type SiteCommand, applyCommand, isSiteCommand } from '../lib/commands';
 import { type Effective, migrateLegacy, normalizeSite, resolveEffective } from '../lib/settings';
 import { normalizeHost, siteKeyFromUrl, siteStorageKey } from '../lib/site';
 import { SCHEMA_VERSION, VERSION_KEY, loadSettings, saveSite } from '../lib/storage';
+import { UPDATE_ALARM, UPDATE_KEYS, checkForUpdates } from '../lib/updates';
 
 const MENU_TOGGLE = 'toggle-site';
 const MENU_OPTIONS = 'open-options';
@@ -96,6 +97,18 @@ async function injectIntoOpenTabs(): Promise<void> {
   );
 }
 
+let updateChecks = Promise.resolve();
+
+/**
+ * Queues an update check, so triggers that overlap (browser start and update)
+ * make one request. A failed check is no error for the user, so it is only logged.
+ */
+function queueUpdateCheck(): void {
+  updateChecks = updateChecks.then(() =>
+    checkForUpdates().catch((error: unknown) => console.warn('[gfg Typeface] Update check failed', error)),
+  );
+}
+
 function createMenus(): void {
   browser.contextMenus.removeAll(() => {
     browser.contextMenus.create({
@@ -120,6 +133,11 @@ export default defineBackground(() => {
     await injectIntoOpenTabs();
     await updateAllTabs();
   });
+  browser.runtime.onInstalled.addListener(queueUpdateCheck);
+  browser.runtime.onStartup.addListener(queueUpdateCheck);
+  browser.alarms.onAlarm.addListener((alarm) => {
+    if (alarm.name === UPDATE_ALARM) queueUpdateCheck();
+  });
 
   browser.contextMenus.onClicked.addListener((info) => {
     if (info.menuItemId === MENU_TOGGLE) void runCommand('toggle-site');
@@ -139,7 +157,9 @@ export default defineBackground(() => {
   browser.windows.onFocusChanged.addListener(() => {
     browser.tabs.query({ active: true, lastFocusedWindow: true }).then((tabs) => tabs.forEach(updateTab), () => undefined);
   });
-  browser.storage.onChanged.addListener((_changes, area) => {
+  browser.storage.onChanged.addListener((changes, area) => {
     if (area === 'sync') void updateAllTabs();
+    // Switching update checks on checks at once if one is due; switching them off clears the alarm.
+    else if (area === 'local' && UPDATE_KEYS.enabled in changes) queueUpdateCheck();
   });
 });
